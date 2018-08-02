@@ -1,0 +1,81 @@
+buildscript {
+	ext {
+		springBootVersion = '2.0.4.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+	classpath 'com.bmuschko:gradle-cargo-plugin:2.2.2'
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+plugins {
+  id "com.bmuschko.cargo" version "2.4"
+}
+
+
+apply plugin: 'eclipse-wtp'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'war'
+//apply plugin: 'com.bmuschko.cargo'
+
+
+group = 'com.coursemangement'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+/////////// WAR FILE SETUP ////////////////////////////////////////////////////////////
+
+def warfilepath = './build/libs/' + war.archiveName
+println 'warfilepath ' + warfilepath
+println 'War File Name -->' + war.archiveName
+
+//////////	Tomcat setup
+def urlTomcat = project.hasProperty('SERVERHOSTIP') ? project.getProperty('SERVERHOSTIP') : "localhost"
+def urlUser = project.hasProperty('SERVERUSER') ? project.getProperty('SERVERUSER') : "admin"
+def urlPassword = project.hasProperty('SERVERPWD') ? project.getProperty('SERVERPWD') : "admin" 
+def urlProtocol = project.hasProperty('SERVERPROTOCOL') ? project.getProperty('SERVERPROTOCOL') : "http"
+def urlTomcatPort = project.hasProperty('SERVERPORT') ? project.getProperty('SERVERPORT') : 8080
+urlTomcatPort = urlTomcatPort as int 
+
+/////////////////////////  CARGO SETUP  //////////////////////////////////////////////
+
+cargoRedeployRemote.dependsOn assemble 
+ 
+cargo {
+    containerId = 'tomcat8x'
+	
+    deployable {
+		file = file(warfilepath)
+    }
+	
+    remote {
+        hostname = urlTomcat
+	port= urlTomcatPort
+        username = urlUser
+        password = urlPassword
+    }	
+}
+
+
+
+repositories {
+	mavenCentral()
+}
+
+configurations {
+	providedRuntime
+}
+
+dependencies {
+compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.6'
+	compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	compile('org.springframework.boot:spring-boot-starter-jersey')
+	compile('org.springframework.boot:spring-boot-starter-web')
+//	runtime('mysql:mysql-connector-java')
+	runtime group: 'com.h2database', name: 'h2', version:'1.4.195'
+	providedRuntime('org.springframework.boot:spring-boot-starter-tomcat')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+}
